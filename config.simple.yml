@@ -1,0 +1,16 @@
+triggers:
+
+  - name: github_push
+    event: push
+    run:
+      path: echo
+      args:
+        - "Received Push event"
+
+  - name: github_pull_request
+    event: pull_request
+    run:
+      path: echo
+      args:
+        - "Received Pull Request event"
+

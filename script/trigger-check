@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+set -e
+set -o errexit
+set -o errtrace
+
+cd $(dirname $0)/..
+
+if [[ "$GITHUB_LDAP_PASSWORD" == "" ]]; then
+    echo "ERROR: GITHUB_LDAP_PASSWORD not defined"
+    exit 1
+fi
+
+if [[ "$GITHUB_LDAP_USERNAME" == "" ]]; then
+    echo "ERROR: GITHUB_LDAP_USERNAME not defined"
+    exit 1
+fi
+
+if [[ "$CONCOURSE_TARGET" == "" ]]; then
+    echo "ERROR: CONCOURSE_TARGET not defined"
+    exit 1
+fi
+
+if [[ "$CONCOURSE_URL" == "" ]]; then
+    echo "ERROR: CONCOURSE_URL not defined"
+    exit 1
+fi
+
+echo "triggered by $1"
+
+echo "logging into $CONCOURSE_URL ($CONCOURSE_TARGET) as $GITHUB_LDAP_USERNAME"
+
+token=$(phantomjs --load-images=no --ignore-ssl-errors=yes --debug=no --ssl-protocol=tlsv1 oauth2.js)
+
+echo $token | fly -t $CONCOURSE_TARGET login -c $CONCOURSE_URL &> /dev/null
+
+fly -t $CONCOURSE_TARGET sync
+
+echo "triggering checking resource $2"
+fly -t $CONCOURSE_TARGET cr -r $2

@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+#
+# Contains shared scripts
+
+set -e
+set -o errexit
+set -o errtrace
+
+cd $(dirname $0)/..
+ROOT_DIR=$PWD
+
+function taskStart() {
+    echo -e "\n==> $1\n"
+}
+
+function taskEnd() {
+    echo -e "\n==> Done!\n"
+}
+
+function taskProgress() {
+    echo -e "\n--> $1\n"
+}
+
+function taskDebug() {
+    echo -e "~~~~~~~~~~ $1"
+}
+
+function taskError() {
+    echo -e "\nERR: $1\n" >&2
+    exit 1
+}
+
+function aptInstall() {
+    local _BIN=$1
+    local _PKG=$2
+    #install apt package if its main command binary not already installed
+    if ! builtin type -p $_BIN &>/dev/null; then
+        taskProgress "installing ${_PKG}. this may take a couple of minutes"
+        sudo apt-get -qq -y update
+        sudo apt-get -qq -y install $_PKG
+    fi
+}
+
+function scriptSuccess() {
+    #print success message and script time
+    END_TIME=`date -d "${endtime}" +%s`
+    difftemp=`expr "${END_TIME}" - "${START_TIME}"`
+    totaldiff=`date +%H:%M:%S -ud @${difftemp}`
+
+    echo ""
+    echo -e "$0 took ${totaldiff}\n"
+
+    echo -en "\n\n\n\033[0;32mSUCCESS!\033[0m\n\n\n"
+
+}
+
+function geoIpFix() {
+    if ! grep -q 'us.archive.ubuntu.com' /etc/apt/sources.list; then
+        taskProgress "applying geoIP fix"
+        sudo sed -i -e 's/archive.ubuntu.com/us.archive.ubuntu.com/' /etc/apt/sources.list
+    fi
+}

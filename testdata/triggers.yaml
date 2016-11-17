@@ -1,0 +1,15 @@
+triggers:
+  - name: master
+    event: push
+    rules:
+      - ref: refs/heads/master
+        head_commit.author.username: username
+        pusher.name: username
+        commits.modified: README.md
+    run:
+      path: a/b
+      args:
+        - -exc
+        - |
+          a
+          b

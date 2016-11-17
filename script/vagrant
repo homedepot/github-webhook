@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+
+# script/vagrant: Provision vagrant VM
+
+set -e
+set -o errexit
+set -o errtrace
+
+HOME_DIR=/home/vagrant/src/github.com/homedepot/github-webhook
+mkdir -p $(dirname $HOME_DIR)
+
+if [ ! -d $HOME_DIR ]
+then
+    SCRIPT_DIR=/vagrant
+else
+    SCRIPT_DIR=$HOME_DIR
+fi
+
+source $SCRIPT_DIR/script/settings
+source $SCRIPT_DIR/script/common
+
+function createSymbolicLinks() {
+    taskProgress "creating symbolic links"
+    #create symbolic links for the projects
+    if [ ! -d $HOME_DIR ]
+    then
+        ln -s /vagrant $HOME_DIR
+    fi
+    cd $HOME_DIR
+}
+
+ROOT_DIR=$(dirname $0)
+
+function updateBashProfile() {
+    taskProgress "updating bash profile"
+    export GOPATH=/home/vagrant 1> /dev/null
+    echo "export GOPATH=$GOPATH" | sudo tee -a /home/vagrant/.bash_profile 1> /dev/null
+    export PATH=$PATH:/usr/local/go/bin:$GOPATH/bin
+    echo "export PATH=$PATH" | sudo tee -a /home/vagrant/.bash_profile 1> /dev/null
+    echo "cd ${HOME_DIR}" | sudo tee -a /home/vagrant/.bash_profile 1> /dev/null
+}
+
+taskStart "Provisioning vagrant"
+
+geoIpFix
+createSymbolicLinks
+updateBashProfile
+
+taskEnd
+
+$SCRIPT_DIR/script/bootstrap
+

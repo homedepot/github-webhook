@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+set -e
+set -o errexit
+set -o errtrace
+
+cd $(dirname $0)/..
+ROOT_DIR=${PWD}
+
+source script/settings
+source script/common
+
+taskProgress "formatting"
+go fmt
+
+taskProgress "compiling app"
+go build -ldflags "$LD_FLAGS"

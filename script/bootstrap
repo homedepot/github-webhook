@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+
+# script/bootstrap: installs/starts dependencies and imports settings
+
+set -e
+set -o errexit
+set -o errtrace
+
+cd $(dirname $0)/..
+ROOT_DIR=${PWD}
+
+source script/settings
+source script/common
+
+taskStart "Bootstrapping dependencies"
+
+aptInstall curl curl
+aptInstall git git
+aptInstall gzip gzip
+aptInstall wget wget
+aptInstall tar tar
+
+GO_VERSION=1.7.1
+GO_CHECKSUM=43ad621c9b014cde8db17393dc108378d37bc853aa351a6c74bf6432c1bbd182
+
+function installGo() {
+    if ! builtin type -p go &>/dev/null; then
+        taskProgress "installing go"
+        rm -rf go${GO_VERSION}.linux-amd64.tar.gz
+        curl -s --retry 3 -SLO "https://storage.googleapis.com/golang/go${GO_VERSION}.linux-amd64.tar.gz"
+        echo "${GO_CHECKSUM} *go${GO_VERSION}.linux-amd64.tar.gz" | sha256sum -c -
+        sudo tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz
+        rm -rf go${GO_VERSION}.linux-amd64.tar.gz
+        sudo ln -s /usr/local/go/bin/go /usr/local/bin
+        sudo ln -s /usr/local/go/bin/godoc /usr/local/bin
+        sudo ln -s /usr/local/go/bin/gofmt /usr/local/bin
+    fi
+}
+
+function installGox() {
+    if ! builtin type -p gox &>/dev/null; then
+        taskProgress "installing gox"
+        go get -u github.com/mitchellh/gox
+    fi
+}
+
+function installGvt() {
+    if ! builtin type -p gvt &>/dev/null; then
+        taskProgress "installing gvt"
+        go get -u github.com/FiloSottile/gvt
+    fi
+}
+
+function installCFCli() {
+    if ! builtin type -p cf &>/dev/null; then
+        taskProgress "installing cf cli"
+        sudo wget -qO- 'https://cli.run.pivotal.io/stable?release=linux64-binary&source=github' | sudo tar -zxf - -C /usr/local/bin
+    fi
+}
+
+function installFlyCli() {
+    if ! builtin type -p fly &>/dev/null; then
+        taskProgress "installing concourse fly"
+        sudo wget -O/usr/local/bin/fly 'https://ci.concourse.ci/api/v1/cli?arch=amd64&platform=linux' && sudo chmod +x /usr/local/bin/fly
+    fi
+}
+
+installGo
+installGox
+installGvt
+installCFCli
+installFlyCli
+
+taskEnd

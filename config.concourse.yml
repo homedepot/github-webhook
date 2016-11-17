@@ -1,0 +1,25 @@
+triggers:
+
+  - name: github_push
+    event: push
+    run:
+      path: script/trigger
+      args:
+        - "push"
+        - "github-webhook/github-webhook"
+
+  - name: github_pull_request
+    event: pull_request
+    run:
+      path: script/trigger
+      args:
+        - "pull_request"
+        - "github-webhook/github-webhook"
+
+  - name: github_pull_request_resource_check
+    event: push
+    run:
+      path: script/trigger-check
+      args:
+        - "push"
+        - "github-webhook/github-webhook-resource"

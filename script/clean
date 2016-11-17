@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+# script/clean: cleans docker images for this build
+
+if [ "$*" == "help" ]; then
+    echo "Usage $0 { all | help }"
+    exit 1
+fi
+
+set -e
+cd $(dirname $0)/..
+
+source script/settings
+source script/common
+
+taskStart "clean"
+
+rm -rf ${IMAGE_NAME}*
+
+taskEnd

@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+set -e
+set -o errexit
+set -o errtrace
+
+START_TIME=`date +%s` ##in hh:mm:ss formant to convert in seconds from epoch time
+
+cd $(dirname $0)/..
+
+source script/settings
+source script/common
+source script/tools
+
+taskStart "cibuild"
+
+script/clean
+
+script/compile
+
+script/test
+
+script/crosscompile
+
+scriptSuccess
+
+taskEnd

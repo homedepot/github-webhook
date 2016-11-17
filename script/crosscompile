@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+set -e
+set -o errexit
+set -o errtrace
+
+cd $(dirname $0)/..
+
+source script/settings
+source script/common
+
+function compile() {
+
+    local os=$1
+    local arch=$2
+
+    taskDebug "compiling ${IMAGE_NAME}_$1_$2"
+    GOOS=$1 GOARCH=$2 go build -ldflags "$LD_FLAGS" -o ${IMAGE_NAME}_$1_$2
+}
+
+if ! hash gox 2>/dev/null; then
+
+    compile "linux" "amd64"
+    compile "darwin" "amd64"
+    compile "windows" "amd64"
+
+else
+
+    gox -ldflags "$LD_FLAGS" -os="darwin linux windows" -arch="amd64" .
+
+fi

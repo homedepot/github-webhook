@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+set -e
+set -o errexit
+set -o errtrace
+
+cd $(dirname $0)/..
+ROOT_DIR=$PWD
+
+source script/tools
+
+setupToolEnvironment
+
+$ROOT_DIR/github-webhook_linux_amd64 --config-file $ROOT_DIR/$CONFIG_YML --port=$PORT

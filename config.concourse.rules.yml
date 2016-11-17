@@ -1,0 +1,21 @@
+triggers:
+
+  - name: github_push
+    event: push
+    rules:
+      - ref: refs/heads/master
+    run:
+      path: script/trigger
+      args:
+        - "push"
+        - "github-webhook/github-webhook"
+
+  - name: github_pull_request
+    event: pull_request
+    rules:
+      - ref: refs/heads/develop
+    run:
+      path: script/trigger
+      args:
+        - "pull_request"
+        - "github-webhook/github-webhook"

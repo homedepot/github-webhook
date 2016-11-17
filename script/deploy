@@ -1,0 +1,152 @@
+#!/usr/bin/env bash
+
+# script/deploy: deploys artifacts
+
+set -e
+set -o errexit
+set -o errtrace
+
+cd $(dirname $0)/..
+ROOT_DIR=$PWD
+
+START_TIME=`date +%s` ##in hh:mm:ss formant to convert in seconds from epoch time
+
+source script/settings
+source script/common
+
+set -eo pipefail
+
+trap on_fail ERR
+
+function help() {
+    echo -e "\nUsage $0\n"
+    echo "          deploys pre-built binaries to CloudFoundry"
+    exit 1
+}
+
+function checkEnvVars() {
+    if [[ "$GITHUB_SECRET" == "" ]]; then
+        echo "ERROR: GITHUB_SECRET not defined"
+        exit 1
+    fi
+
+    if [[ "$CONCOURSE_TARGET" == "" ]]; then
+        echo "ERROR: CONCOURSE_TARGET not defined"
+        exit 1
+    fi
+
+    if [[ "$CONCOURSE_URL" == "" ]]; then
+        echo "ERROR: CONCOURSE_URL not defined"
+        exit 1
+    fi
+    if [[ "$GITHUB_LDAP_PASSWORD" == "" ]]; then
+        echo "ERROR: GITHUB_LDAP_PASSWORD not defined"
+        exit 1
+    fi
+
+    if [[ "$GITHUB_LDAP_USERNAME" == "" ]]; then
+        echo "ERROR: GITHUB_LDAP_USERNAME not defined"
+        exit 1
+    fi
+}
+
+function on_fail () {
+    taskError "DEPLOY FAILED - you may need to check 'cf apps' and 'cf routes' and do manual cleanup"
+}
+
+function cfPush() {
+
+    taskProgress "pushing $GREEN"
+
+    cf delete -f -r $GREEN &> /dev/null || true
+
+    ( cd $STAGING_DIR && cf push ${GREEN} -i ${CF_INSTANCES} -m ${CF_MEMORY} -k ${CF_DISK} -b https://github.com/cloudfoundry/binary-buildpack.git \
+     -c 'chmod +x ./script/* && ./script/start' -n ${GREEN} --no-start | sed 's/^/\t/')
+}
+
+function cfBind() {
+
+    taskProgress "binding env"
+
+    cf set-env ${GREEN} GITHUB_SECRET "$GITHUB_SECRET" &> /dev/null
+    cf set-env ${GREEN} GITHUB_LDAP_USERNAME "$GITHUB_LDAP_USERNAME" &> /dev/null
+    cf set-env ${GREEN} GITHUB_LDAP_PASSWORD "$GITHUB_LDAP_PASSWORD" &> /dev/null
+    cf set-env ${GREEN} CONCOURSE_URL "$CONCOURSE_URL" &> /dev/null
+    cf set-env ${GREEN} CONCOURSE_TARGET "$CONCOURSE_TARGET" &> /dev/null
+    cf set-env ${GREEN} DEBUG "$DEBUG" &> /dev/null
+
+}
+
+function cfPreflight() {
+
+    taskProgress "preflight checks"
+
+    #check that we're logged in
+    if ! cf target &>/dev/null; then
+        taskDebug "ERROR: you must already be logged in to CloudFoundry"
+        exit 1
+    fi
+
+    checkEnvVars
+
+    cf target | sed 's/^/\t/'
+    echo""
+
+}
+
+function cfStart() {
+
+    taskProgress "starting app"
+    cf start ${GREEN} | sed 's/^/\t/'
+
+    local DOMAIN=$(cf domains | tail -n +3 | awk '{print $1}' | head -n 1)
+
+    #replaces underscores in the app name with dashes
+    local GREEN_ROUTE=${GREEN//_/-}
+    local GREEN_URL=https://${GREEN_ROUTE}.${DOMAIN}
+
+    taskProgress "deployment tests"
+
+    #taskDebug "testing ${GREEN_URL}"
+    curl --fail --insecure --silent "${GREEN_URL}" > /dev/null
+
+    taskProgress "remapping routes"
+
+    # add the GREEN application to each BLUE route to be load-balanced
+    # TODO this output parsing seems a bit fragile...find a way to use more structured output
+    cf routes | tail -n +4 | grep $BLUE | awk '{print $3" -n "$2}' | xargs -n 3 cf map-route $GREEN
+
+    (cf delete $BLUE -f || true) | sed 's/^/\t/'
+    cf rename $GREEN $BLUE | sed 's/^/\t/'
+    cf delete-route $DOMAIN -n $GREEN_ROUTE -f | sed 's/^/\t/'
+
+}
+
+function cloudfoundry() {
+
+    BLUE=$CF_APP_NAME
+    GREEN="${BLUE}-bg"
+
+    cfPreflight
+    cfPush
+    cfBind
+    cfStart
+
+    echo ""
+
+    taskProgress "app logs"
+    cf logs ${CF_APP_NAME} --recent
+
+    taskProgress "apps"
+    cf apps
+    echo ""
+
+}
+
+if [[ "$*" == "help" ]]; then
+        help
+fi
+
+script/package
+cloudfoundry
+scriptSuccess

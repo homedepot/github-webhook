@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+# script/bootstrap: installs/starts dependencies and imports settings
+
+set -e
+set -o errexit
+set -o errtrace
+
+cd $(dirname $0)/..
+
+source script/settings
+source script/common
+
+function checkEnvVars() {
+    if [[ "$CONCOURSE_TARGET" == "" ]]; then
+        echo "ERROR: CONCOURSE_TARGET not defined"
+        exit 1
+    fi
+}
+
+checkEnvVars
+
+taskStart "concourse pipeline"
+
+sudo fly -t $CONCOURSE_TARGET sync
+
+fly -t $CONCOURSE_TARGET destroy-pipeline -n -p github-webhook
+fly -t $CONCOURSE_TARGET set-pipeline -n -c pipeline.yml -p github-webhook
+fly -t $CONCOURSE_TARGET unpause-pipeline -p github-webhook
+fly -t $CONCOURSE_TARGET expose-pipeline -p github-webhook
+
+taskEnd
+

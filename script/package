@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+
+set -e
+set -o errexit
+set -o errtrace
+
+START_TIME=`date +%s` ##in hh:mm:ss formant to convert in seconds from epoch time
+
+cd $(dirname $0)/..
+
+source script/settings
+source script/common
+source script/tools
+
+taskStart "packaging build"
+
+rm -rf $STAGING_DIR
+mkdir -p $STAGING_DIR/script
+
+downloadTools
+buildTools
+
+pushd $STAGING_DIR > /dev/null
+
+#copy app
+cp $ROOT_DIR/github-webhook_linux_amd64 .
+
+#copy configurations
+cp $ROOT_DIR/config*.yml .
+
+#copy scripts
+cp $ROOT_DIR/script/common script/
+cp $ROOT_DIR/script/settings script/
+cp $ROOT_DIR/script/tools script/
+cp $ROOT_DIR/script/start script/
+cp $ROOT_DIR/script/trigger script/
+cp $ROOT_DIR/script/trigger-check script/
+cp $ROOT_DIR/oauth2.js .
+
+find . -type f -perm /a=x > executables
+chmod -R 0600 .
+
+popd > /dev/null
+
+scriptSuccess
+
+taskEnd

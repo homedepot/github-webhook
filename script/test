@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+# script/test: runs the test suite
+
+set -e
+set -o errexit
+set -o errtrace
+
+cd $(dirname $0)/..
+ROOT_DIR=$PWD
+
+source script/settings
+source script/common
+
+taskStart "Testing"
+
+if [ "$1" != "" ]; then
+    args=$(printf " %q" "$@")
+    args="-run $args"
+else
+    args=$(go list ./... | grep -v /vendor/)
+fi
+
+go test -race -p 4 -test.v $args
+
+taskEnd

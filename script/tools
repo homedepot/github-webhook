@@ -1,0 +1,247 @@
+#!/usr/bin/env bash
+
+set -e
+set -o errexit
+set -o errtrace
+
+cd $(dirname $0)/..
+ROOT_DIR=$PWD
+
+source script/settings
+source script/common
+
+function downloadFile() {
+    local name=$1
+    local url=$2
+    local file=$3
+    local checksum=$4
+
+    if [ ! -f "$DOWNLOAD_DIR/$file" ]; then
+        taskProgress "downloading $name"
+
+        mkdir -p $DOWNLOAD_DIR
+
+        #retry on transfer closed error
+        local ec=18;
+        while [ $ec -eq 18 ]; do
+            curl -k -C - --keepalive-time 2 --header "Cookie: oraclelicense=accept-securebackup-cookie" --silent \
+                --show-error --retry 999 --retry-max-time 0 -fL "$url" -o "$DOWNLOAD_DIR/$file"
+            ec=$?;
+        done
+
+        if [ ! -z "$checksum" ]; then
+            echo "$checksum $DOWNLOAD_DIR/$file" | sha1sum -c - > /dev/null
+        fi
+    fi
+
+}
+
+###################### CloudFoundry CF CLI
+
+function downloadCFCli() {
+    downloadFile "cf" \
+    "https://cli.run.pivotal.io/stable?release=linux64-binary&source=github" \
+    "cf.tar.gz"
+}
+
+function setupCFCli() {
+
+    #cloudfoundry cli settings
+    export CF_HOME=$TOOLS/cf
+
+    #add executable paths to PATH
+    export PATH=$CF_HOME:$PATH
+
+    cf --version
+
+}
+
+function buildCFCli() {
+
+    taskDebug "extracting cf"
+
+    local dest=$STAGING_DIR/tools/cf
+    mkdir -p $dest
+    tar xf $DOWNLOAD_DIR/cf.tar.gz -C $dest
+
+}
+
+###################### PhantomJS
+
+function downloadPhantomJS() {
+    downloadFile "phantomjs" \
+    "https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-2.1.1-linux-x86_64.tar.bz2" \
+    "phantomjs.tar.bz2"
+}
+
+function setupPhantomJS() {
+
+    export PHANTOMJS_HOME=$TOOLS/phantomjs
+
+    #add executable paths to PATH
+    export PATH=$PHANTOMJS_HOME/bin:$PATH
+
+    phantomjs --version
+
+}
+
+function buildPhantomJS() {
+
+    taskDebug "extracting phantomjs"
+
+    local dest=$STAGING_DIR/tools/phantomjs
+    mkdir -p $dest
+    tar xf $DOWNLOAD_DIR/phantomjs.tar.bz2 -C $dest --strip-components=1
+
+}
+
+###################### CloudFoundry FLY CLI
+
+function downloadFLYCli() {
+    downloadFile "fly" \
+    "$FLY_TOOL_LOCATION" \
+    "fly"
+}
+
+function setupFLYCli() {
+
+    #cloudfoundry cli settings
+    export FLY_HOME=$TOOLS/fly
+
+    #add executable paths to PATH
+    export PATH=$FLY_HOME:$PATH
+
+    fly --version
+
+}
+
+function buildFLYCli() {
+
+    taskDebug "extracting fly"
+
+    local dest=$STAGING_DIR/tools/fly
+    mkdir -p $dest
+    cp $DOWNLOAD_DIR/fly $dest
+    chmod +x $dest/fly
+
+}
+
+###################### Certificates
+
+function downloadCerts() {
+    #add your certs here
+    echo ""
+}
+
+function setupCerts() {
+    local dummy=""
+}
+
+function buildCerts() {
+    local dest=$STAGING_DIR/certificates
+    mkdir -p $dest
+}
+
+###################### Tools
+
+function downloadTools() {
+
+    for TOOL in "${WEBHOOK_TOOLS[@]}"
+    do
+        case "$TOOL" in
+            certificates)
+                downloadCerts
+                ;;
+            cf)
+                downloadCFCli
+                ;;
+            fly)
+                downloadFLYCli
+                ;;
+            phantomjs)
+                downloadPhantomJS
+                ;;
+            *)
+                taskError "Unknown tool ${TOOL}"
+                ;;
+        esac
+    done
+
+}
+
+function setupPermissions() {
+
+    taskProgress "setting permissions"
+
+    #setup known pre-staging executables
+    if [ -f $HOME/executables ]; then
+        pushd $HOME > /dev/null
+        while read p; do
+            chmod -v +x $p || true
+            done <executables
+        popd > /dev/null
+    fi
+
+    #ensure scripts are executable, otherwise login does not work
+    chmod +x $HOME/script/*
+
+}
+function setupToolEnvironment() {
+
+    #set proxy environment variables here
+
+    #set directory paths
+    export TOOLS=$HOME/tools
+    mkdir -p $TOOLS
+
+    setupPermissions
+
+    for TOOL in "${WEBHOOK_TOOLS[@]}"
+    do
+        taskProgress "setting up $TOOL"
+        case "$TOOL" in
+            certificates)
+                setupCerts
+                ;;
+            cf)
+                setupCFCli
+                ;;
+            fly)
+                setupFLYCli
+                ;;
+            phantomjs)
+                setupPhantomJS
+                ;;
+            *)
+                taskError "Unknown tool ${TOOL}"
+                ;;
+        esac
+    done
+
+}
+
+function buildTools() {
+
+    for TOOL in "${WEBHOOK_TOOLS[@]}"
+    do
+        taskProgress "building $TOOL"
+        case "$TOOL" in
+            certificates)
+                buildCerts
+                ;;
+            cf)
+                buildCFCli
+                ;;
+            fly)
+                buildFLYCli
+                ;;
+            phantomjs)
+                buildPhantomJS
+                ;;
+            *)
+                taskError "Unknown tool ${TOOL}"
+                ;;
+        esac
+    done
+
+}
