@@ -4,6 +4,18 @@ set -e
 set -o errexit
 set -o errtrace
 
+# default executable locations
+phantomjs_executable=phantomjs
+fly_executable=fly
+
+# If the runtime is a Cloud Foundry application instance,
+# reference the full paths to the deployed `phantomjs`
+# and `fly` executables.
+if [[ "$CF_INSTANCE_GUID" != "" ]]; then
+    phantomjs_executable=/app/tools/phantomjs/bin/phantomjs
+    fly_executable=/app/tools/fly/fly
+fi
+
 cd $(dirname $0)/..
 
 if [[ "$GITHUB_LDAP_PASSWORD" == "" ]]; then
@@ -30,11 +42,11 @@ echo "triggered by $1"
 
 echo "logging into $CONCOURSE_URL ($CONCOURSE_TARGET) as $GITHUB_LDAP_USERNAME"
 
-token=$(phantomjs --load-images=no --ignore-ssl-errors=yes --debug=no --ssl-protocol=tlsv1 oauth2.js)
+token=$($phantomjs_executable --load-images=no --ignore-ssl-errors=yes --debug=no --ssl-protocol=tlsv1 oauth2.js)
 
-echo $token | fly -t $CONCOURSE_TARGET login -c $CONCOURSE_URL &> /dev/null
+echo $token | $fly_exectuable -t $CONCOURSE_TARGET login -c $CONCOURSE_URL &> /dev/null
 
-fly -t $CONCOURSE_TARGET sync
+$fly_executable -t $CONCOURSE_TARGET sync
 
 echo "triggering job $2"
-fly -t $CONCOURSE_TARGET trigger-job --job $2
+$fly_exectuable -t $CONCOURSE_TARGET trigger-job --job $2
