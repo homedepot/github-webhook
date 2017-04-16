@@ -126,6 +126,10 @@ cf login -a api.run.somewhere.com
 
 ./script/deploy
 ```
+
+Note that `script/deploy` does not bind any routes to the deployed `github-webhook` app. After deployment,
+it's necessary to bind the desired route to the app via `cf map-route` such that the app is available to GitHub over HTTP.
+
 ### GitHub
 
 You can use an existing project for this, or create a new one if you're not too sure yet.
