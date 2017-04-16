@@ -14,7 +14,7 @@ triggers:
     run:
       path: script/trigger
       args:
-        - "master"            
+        - "master"
 ```
 
 The webhook matches by looking at the event (`push` or `pull_request`) and the rules that have been defined.
@@ -25,7 +25,7 @@ find a matching rule key and value.
 
 For example, given `Push` event:
 
-```json  
+```json
 {
   "ref": "refs/heads/master",
   "commits": [{
@@ -68,17 +68,17 @@ In order to minimize the polling to Github Enterprise.
   git config --global user.name "My Name"
   git config --global user.email "your_email@example.com"
   ```
-  
+
 ### Windows Users
-    
+
     The deployment scripts require Windows x64 and CPU Virtualization
     Virtualization is disabled by default
     Contact Desktop Services to upgrade to x64 or enable Virtualization
-    Ensure that git is available from your command-line (Git Bash recommended)                 
+    Ensure that git is available from your command-line (Git Bash recommended)
 
 ## Concourse CI
 
-If you haven't already done so, setup a CI server following Chris Gruel's instructional video on [YouTube](https://www.youtube.com/watch?v=WdSUxEIdO50). 
+If you haven't already done so, setup a CI server following Chris Gruel's instructional video on [YouTube](https://www.youtube.com/watch?v=WdSUxEIdO50).
 
 ### Build
 
@@ -152,11 +152,11 @@ OUT 2016/10/03 09:53:14 Redirecting stdout/stderr for github_push
 OUT triggered by push
 OUT logging into http://XXXX.somewhere.com/main
 OUT target saved
-OUT downloading fly from http://XXXX.somewhere.com... 
+OUT downloading fly from http://XXXX.somewhere.com...
 OUT triggering job github-webhook/github-webhook
 OUT started github-webhook/github-webhook #1
 OUT 2016/10/03 09:53:14 github_push was successful!
-```        
+```
 
 ### Make It Your Own
 
@@ -164,7 +164,7 @@ OUT 2016/10/03 09:53:14 github_push was successful!
 * Look at the following configuration files [config.simple.yml](config.simple.yml) [config.concourse.yml](config.concourse.yml) [config.concourse.rules.yml](config.concourse.rules.yml)
 * Look at the following scripts: [script/concourse](script/concourse) [script/settings](script/settings) [script/trigger](script/trigger) [script/trigger-check](script/trigger-check)
 * Change CONFIG_YML on [script/settings](script/settings) to deploy different configurations
-* Turn on [autoscaling](http://docs.pivotal.io/pivotalcf/1-8/appsman-services/autoscaler/autoscale-configuration.html) for your webhook 
+* Turn on [autoscaling](http://docs.pivotal.io/pivotalcf/1-8/appsman-services/autoscaler/autoscale-configuration.html) for your webhook
 * Contribute to the project
 
 # Credit & Inspiration
@@ -180,7 +180,7 @@ OUT 2016/10/03 09:53:14 github_push was successful!
 
 * Incorporate this functionality into Concourse
 * More tests
-              
+
 # Contributors
 
 Marcos Mendez
