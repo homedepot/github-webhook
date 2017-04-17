@@ -1,4 +1,3 @@
-var process = require("child_process");
 var system = require('system');
 var env = system.env;
 var page = require('webpage').create();
