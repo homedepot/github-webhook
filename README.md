@@ -4,7 +4,7 @@ Configurable GitHub WebHook deployable on CloudFoundry
 
 # Inspiration
 This Webhook was built in April 2017 to work around an issue we were experiencing with a high volume of clones
-to Github Enterprise. This happened because [Concourse](https://concourse-ci.org/)'s [git-resource](https://github.com/concourse/git-resource) cloned the repository periodically based on the value of `[check_every](https://concourse-ci.org/resources.html#resource-check-every)` to determine if a change had occurred. Since then
+to Github Enterprise. This happened because [Concourse](https://concourse-ci.org/)'s [git-resource](https://github.com/concourse/git-resource) cloned the repository periodically based on the value of [check_every](https://concourse-ci.org/resources.html#resource-check-every) to determine if a change had occurred to the resource. Since then
 Concourse now supports having a [webhook](https://concourse-ci.org/resources.html#resource-webhook-token) trigger a check of the resource which dramatically reduced the load on our Github Enterprise installation of which our Admins greatly appreciated. :) See [Pull Request #331](https://github.com/concourse/concourse/issues/331) for details on how it was done.
 
 
