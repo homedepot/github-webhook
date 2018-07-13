@@ -2,6 +2,11 @@
 
 Configurable GitHub WebHook deployable on CloudFoundry
 
+# Inspiration
+This Webhook was built to work around an issue we were experiencing with a high volume of clones
+to Github Enterprise because [Concourse](https://concourse-ci.org/)'s [git-resource](https://github.com/concourse/git-resource) resulting to cloning the repository periodically to determine if a change had occurred. Since this repository was built
+Concourse now supports having a [webhook](https://concourse-ci.org/resources.html#resource-webhook-token) trigger a check of the resource which dramatically reduced the load on Github Enterprise. See [Pull Request #331](https://github.com/concourse/concourse/issues/331)
+
 ![github-webhook](docs/github-webhook.png "github-webhook")
 ```yaml
 triggers:
@@ -61,7 +66,7 @@ In order to minimize the polling to Github Enterprise.
 * Install `VirtualBox` or `VMWare` software hypervisor of choice
 * Install [vagrant](https://vagrantup.com)
 * Install & [configure](https://help.github.com/categories/setup/) git
-  
+
   ```shell
   git config --global core.autocrlf input
   git config --global push.default simple
@@ -72,8 +77,6 @@ In order to minimize the polling to Github Enterprise.
 ### Windows Users
 
     The deployment scripts require Windows x64 and CPU Virtualization
-    Virtualization is disabled by default
-    Contact Desktop Services to upgrade to x64 or enable Virtualization
     Ensure that git is available from your command-line (Git Bash recommended)
 
 ## Concourse CI
@@ -100,7 +103,7 @@ cd github-webhook
 * Run `./vssh`. This will ssh into the disposable vm
 * Setup Concourse CI URL
 * Setup Concourse CI Target
-* Setup LDAP credentials in order to automatically retrieve a bearer token:
+* Setup User credentials in order to automatically retrieve a bearer token:
 * Login to Concourse CI
 * Run `script/concourse` to setup `github-webhook` and push [pipeline.yml](pipeline.yml)
 * Login to NP CloudFoundry
@@ -182,7 +185,7 @@ OUT 2016/10/03 09:53:14 github_push was successful!
 
 # TODO
 
-* Incorporate this functionality into Concourse
+* ~~Incorporate this functionality into Concourse~~
 * More tests
 
 # Contributors
